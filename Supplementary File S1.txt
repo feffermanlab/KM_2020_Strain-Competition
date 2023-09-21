@@ -1,0 +1,1919 @@
+(* Computer Code *)
+
+(* to accompany the manuscript "Impact of Strain Competition on Bacterial Resistance in Immunocompromised Populations" *)
+
+(* DeNegre, Myers, & Fefferman *)
+
+(* written in the Wolfram language *)
+
+SSHH[prev_: 0.274] := Module[{},
+   Clear[S, Sp, EE, II, R, Iall, Ep, Ip, Rp, dv, db, t, qem, p, q];
+   
+   c[+1] = 0.2;
+   c[00] = 0.5;
+   c[-1] = 0.3;
+   
+   \[Rho][-1, -1] = 0.001;
+   \[Rho][+1, -1] = 0.01;
+   \[Rho][+1, +1] = 0.002;
+   
+   \[Gamma][-1, -1, p, +1] = \[Gamma][+1, +1, p, +1] = 3.0 10^-3;
+   \[Gamma][-1, -1, p, 00] = \[Gamma][+1, +1, p, 00] = 2.0 10^-3;
+   \[Gamma][-1, -1, p, -1] = \[Gamma][+1, +1, p, -1] = 9.13 10^-4;
+   
+   \[Alpha]x = 0.5;
+   \[Gamma][+1, +1, p, +1] = \[Alpha]x \[Gamma][+1, +1, p, +1];
+   \[Gamma][+1, +1, p, 00] = \[Alpha]x \[Gamma][+1, +1, p, 00];
+   \[Gamma][+1, +1, p, -1] = \[Alpha]x \[Gamma][+1, +1, p, -1];
+   
+   \[Gamma][-1, -1, 
+     q, +1] = \[Gamma][+1, +1, q, +1] = \[Gamma][-1, -1, p, +1];
+   \[Gamma][-1, -1, q, 
+     00] = \[Gamma][+1, +1, q, 00] = \[Gamma][-1, -1, p, 00];
+   \[Gamma][-1, -1, 
+     q, -1] = \[Gamma][+1, +1, q, -1] = \[Gamma][-1, -1, p, -1];
+   
+   \[Gamma][+1, -1, p, +1] = 2.0 10^-3;
+   \[Gamma][+1, -1, p, 00] = 1.5 10^-3;
+   \[Gamma][+1, -1, p, -1] = 3.0 10^-4;
+   
+   \[Gamma][+1, -1, q, +1] = \[Gamma][+1, -1, p, +1];
+   \[Gamma][+1, -1, q, 00] = \[Gamma][+1, -1, p, 00];
+   \[Gamma][+1, -1, q, -1] = \[Gamma][+1, -1, p, -1];
+   
+   \[Phi][-1, -1, +1] = 0.011515597;
+   \[Phi][-1, -1, 00] = 0.024290712;
+   \[Phi][-1, -1, -1] = 0.002272815;
+   
+   \[Phi][+1, -1, +1] = 0.023750918;
+   \[Phi][+1, -1, 00] = 0.042417655;
+   \[Phi][+1, -1, -1] = 0.010312899;
+   
+   \[Phi][+1, +1, +1] = 0.011515597;
+   \[Phi][+1, +1, 00] = 0.024290712;
+   \[Phi][+1, +1, -1] = 0.002272815;
+   
+   \[Theta][-1, 00] = 1.05 10^-2;
+   \[Theta][00, -1] = 1.05 10^-2;
+   
+   \[Beta]0 = 1/10 1/365 8.5 10^-6 1/10^6;
+   
+   \[Beta][-1, -1, q][cf_] = \[Beta]0 n ic;
+   \[Beta][-1, -1, p][cf_] = 
+    1/cf \[Gamma][-1, -1, q, +1]/\[Gamma][-1, -1, 
+      q, -1] \[Beta][-1, -1, q][cf];
+   
+   \[Beta][+1, -1, q][cf_] = 1.1 \[Beta]0 n (1 - ic) aa;
+   \[Beta][+1, -1, p][cf_] = 
+    1/cf \[Gamma][+1, -1, q, +1]/\[Gamma][+1, -1, 
+      q, -1] \[Beta][+1, -1, q][cf];
+   
+   \[Beta][+1, +1, q][cf_] = \[Beta]0 n (1 - ic) hh; 
+   \[Beta][+1, +1, p][cf_] = 
+    1/cf \[Gamma][+1, +1, q, +1]/\[Gamma][+1, +1, 
+      q, -1] \[Beta][+1, +1, q][cf];
+   \[Zeta]0 = 1/365 0.88; 
+   
+   \[Zeta][-1, -1, q] = \[Zeta]0; 
+   \[Zeta][-1, -1, p] = \[Zeta]0;
+   
+   \[Zeta][+1, -1, q] = 1.1 \[Zeta]0;
+   \[Zeta][+1, -1, p] = 1.1 \[Zeta]0;
+   
+   \[Zeta][+1, +1, q] = \[Zeta]0 ;
+   \[Zeta][+1, +1, p] = \[Zeta]0;
+   \[Omega] = 4.45 10^-5;
+   \[Omega]b = 8.22 10^-4;
+   \[Omega]bv = 3.3 \[Omega]b;
+   \[Omega]v = 2 10^-3;
+   
+   \[Alpha] = 6.9 10^-5;
+   MyEqS[i_, j_][
+     cf_] := -(\[Beta][i, j, p] [cf] Iall[p][t] + \[Beta][i, j, q] [
+           cf] Iall[q][t]) S[i, j][t] +
+     \[Rho][i, j] R[i, j][t] - \[Omega] S[i, j][t];
+   MyEqE[i_, j_, k_][
+     cf_] := \[Beta][i, j, k][cf] S[i, j][t] Iall[k][t] - \[Zeta][i, 
+       j, k] EE[i, j, k][t] - \[Omega] EE[i, j, k][t];
+   MyEqI[i_, j_, k_, l_, 
+     noq_] := \[Zeta][i, j, k] c[l] EE[i, j, k][t] - \[Gamma][i, j, k,
+        l] II[i, j, k, l][t] + 
+     If[SameQ[k, p], -1, +1] If[noq, 
+       0, \[Phi][i, j, l] ] II[i, j, p, l][t] + 
+     Which[l == +1, 0, l == 0, -1, 
+       l == -1, +1] (\[Theta][00, -1] II[i, j, k, 00][
+          t] - \[Theta][-1, 00] II[i, j, k, -1][t]) + -\[Omega] II[i, 
+        j, k, l][t];
+   MyEqR[i_, j_] := \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \(1\)]\((\[Gamma][i, 
+          j, p, l] \(II[i, j, p, l]\)[t] + \[Gamma][i, j, q, 
+          l] \(II[i, j, q, l]\)[t])\)\) - \[Rho][i, j] R[i, j][
+       t] - \[Omega] R[i, j][t];
+   EQN[cf_, noq_] := {
+     
+     S[-1, -1]'[t] == MyEqS[-1, -1][cf] +
+       \[Alpha] (S[-1, -1][t] + S[+1, +1][t] + Sp[+1, +1][t] +
+          EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, +1, p][t] + 
+          EE[+1, +1, q][t] + Ep[+1, +1][t] +
+          II[-1, -1, p, +1][t] + II[+1, +1, p, +1][t] +
+          R[-1, -1][t] + R[+1, +1][t] + Rp[+1, +1][t]),
+     
+     S[+1, -1]'[t] == MyEqS[+1, -1][cf] +
+       \[Alpha] (S[+1, -1][t] + EE[+1, -1, p][t] + EE[+1, -1, q][t] + 
+          R[+1, -1][t]) -
+       \[Omega]v S[+1, -1][t],
+     
+     S[+1, +1]'[t] == MyEqS[+1, +1][cf],
+     
+     Sp[+1, -1]'[
+       t] == -\[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] + \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega] Sp[+1, -1][
+         t] - \[Omega]v Sp[+1, -1][t],
+     
+     Sp[+1, +1]'[
+       t] == -\[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] + \[Rho][+1, +1] Rp[+1, -1][t] - \[Omega] Sp[+1, +1][t]
+       + \[Alpha] (Sp[+1, -1][t] + Ep[+1, -1][t] + Rp[+1, -1][t]),
+     
+     EE[-1, -1, p]'[t] == MyEqE[-1, -1, p][cf],
+     EE[-1, -1, q]'[t] == If[noq, 0, MyEqE[-1, -1, q][cf]],
+     
+     EE[+1, -1, p]'[t] == 
+      MyEqE[+1, -1, p][cf] - \[Omega]v EE[+1, -1, p][t],
+     EE[+1, -1, q]'[t] == 
+      If[noq, 0, MyEqE[+1, -1, q][cf] - \[Omega]v EE[+1, -1, q][t]],
+     
+     EE[+1, +1, p]'[t] == MyEqE[+1, +1, p][cf],
+     EE[+1, +1, q]'[t] == MyEqE[+1, +1, q][cf],
+     
+     Ep[+1, -1]'[
+       t] == \[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] - \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][
+         t] - \[Omega]v Ep[+1, -1][t],
+     Ep[+1, +1]'[
+       t] == \[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] - \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t],
+     
+     Eall[t] == 
+      EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, -1, p][t] + 
+       EE[+1, -1, q][t] + EE[+1, +1, p][t] + EE[+1, +1, q][t] + 
+       Ep[+1, -1][t] + Ep[+1, +1][t],
+     
+     dEp[t] == \[Beta][-1, -1, p][cf] S[-1, -1][t] Iall[p][
+         t] + \[Beta][+1, -1, p][cf] S[+1, -1][t] Iall[p][
+         t] + \[Beta][+1, +1, p][cf] S[+1, +1][t] Iall[p][t],
+     
+     II[-1, -1, p, +1]'[t] == MyEqI[-1, -1, p, +1, noq],
+     II[-1, -1, p, 00]'[t] == 
+      MyEqI[-1, -1, p, 00, 
+        noq] + \[Alpha] (II[-1, -1, p, 00][t] + II[+1, +1, p, 00][t]) -
+       \[Omega]b II[-1, -1, p, 00][t],
+     II[-1, -1, p, -1]'[t] == 
+      MyEqI[-1, -1, p, -1, 
+        noq] + \[Alpha] (II[-1, -1, p, -1][t] + II[+1, +1, p, -1][t]) -
+       \[Omega]b II[-1, -1, p, -1][t],
+     II[-1, -1, q, +1]'[t] == 
+      MyEqI[-1, -1, q, +1, 
+        noq] + \[Alpha] (II[-1, -1, q, +1][t] + II[+1, +1, q, +1][t])
+       - \[Omega]b II[-1, -1, q, +1][t],
+     II[-1, -1, q, 00]'[t] == 
+      MyEqI[-1, -1, q, 00, 
+        noq] + \[Alpha] (II[-1, -1, q, 00][t] + II[+1, +1, q, 00][t]) -
+       \[Omega]b II[-1, -1, q, 00][t],
+     II[-1, -1, q, -1]'[t] == MyEqI[-1, -1, q, -1, noq] +
+       \[Alpha] (II[-1, -1, q, -1][t] + II[+1, +1, q, -1][t] + 
+          Ip[+1, +1, q, +1][t]) -
+       \[Omega]b II[-1, -1, q, -1][t],
+     
+     II[+1, -1, p, +1]'[t] == 
+      MyEqI[+1, -1, p, +1, noq] - \[Omega]v II[+1, -1, p, +1][t],
+     II[+1, -1, p, 00]'[t] == 
+      MyEqI[+1, -1, p, 00, 
+        noq] + \[Alpha] II[+1, -1, p, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, 00][t],
+     II[+1, -1, p, -1]'[t] == 
+      MyEqI[+1, -1, p, -1, 
+        noq] + \[Alpha] II[+1, -1, p, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, -1][t],
+     II[+1, -1, q, +1]'[t] == 
+      MyEqI[+1, -1, q, +1, 
+        noq] + \[Alpha] II[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, +1][t],
+     II[+1, -1, q, 00]'[t] == 
+      MyEqI[+1, -1, q, 00, 
+        noq] + \[Alpha] II[+1, -1, q, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, 00][t],
+     II[+1, -1, q, -1]'[t] == 
+      MyEqI[+1, -1, q, -1, 
+        noq] + \[Alpha] II[+1, -1, q, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, -1][t],
+     
+     II[+1, +1, p, +1]'[t] == MyEqI[+1, +1, p, +1, noq],
+     II[+1, +1, p, 00]'[t] == 
+      MyEqI[+1, +1, p, 00, noq] - \[Omega]b II[+1, +1, p, 00][t],
+     II[+1, +1, p, -1]'[t] == 
+      MyEqI[+1, +1, p, -1, noq] - \[Omega]b II[+1, +1, p, -1][t],
+     II[+1, +1, q, +1]'[t] == 
+      MyEqI[+1, +1, q, +1, noq] - \[Omega]b II[+1, +1, q, +1][t],
+     II[+1, +1, q, 00]'[t] == 
+      MyEqI[+1, +1, q, 00, noq] - \[Omega]b II[+1, +1, q, 00][t],
+     II[+1, +1, q, -1]'[t] == 
+      MyEqI[+1, +1, q, -1, noq] - \[Omega]b II[+1, +1, q, -1][t],
+     
+     Ip[+1, -1, q, +1]'[
+       t] == \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][t] - \[Gamma][+1, -1,
+          q, +1] Ip[+1, -1, q, +1][t]
+       + \[Alpha] Ip[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]b) Ip[+1, -1, q, +1][t],
+     
+     Ip[+1, +1, q, +1]'[
+       t] == \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t] - \[Gamma][+1, +1,
+          q, +1] Ip[+1, +1, q, +1][t] -
+       \[Omega]b Ip[+1, +1, q, +1][t],
+     
+     Iall[p][t] ==
+      II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+       II[-1, -1, p, -1][t] +
+       II[+1, -1, p, +1][t] + II[+1, -1, p, 00][t] + 
+       II[+1, -1, p, -1][t] +
+       II[+1, +1, p, +1][t] + II[+1, +1, p, 00][t] + 
+       II[+1, +1, p, -1][t],
+     
+     Iall[q][t] ==
+      II[-1, -1, q, +1][t] + II[-1, -1, q, 00][t] + 
+       II[-1, -1, q, -1][t] +
+       II[+1, -1, q, +1][t] + II[+1, -1, q, 00][t] + 
+       II[+1, -1, q, -1][t] +
+       II[+1, +1, q, +1][t] + II[+1, +1, q, 00][t] + 
+       II[+1, +1, q, -1][t] + Ip[+1, +1, q, +1][t] + 
+       Ip[+1, -1, q, +1][t],
+     
+     R[-1, -1]'[t] == MyEqR[-1, -1],
+     
+     R[+1, -1]'[t] == MyEqR[+1, -1] - \[Omega]v R[+1, -1][t],
+     
+     R[+1, +1]'[t] == MyEqR[+1, +1],
+     
+     Rp[+1, -1]'[
+       t] == \[Gamma][+1, -1, q, +1] Ip[+1, -1, q, +1][
+         t] - \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega]v Rp[+1, -1][t],
+     Rp[+1, +1]'[
+       t] == \[Gamma][+1, +1, q, +1] Ip[+1, +1, q, +1][
+         t] - \[Rho][+1, +1] Rp[+1, +1][t],
+     
+     trans1'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+         II[-1, -1, p, -1][t]), (* IC to IC *)
+     
+     trans2'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (II[-1, -1, 
+           p, +1][t] + II[-1, -1, p, 00][t] + II[-1, -1, p, -1][t]), (* 
+     IC to HIV *)
+     
+     trans3'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (Iall[p][t] - II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] -
+          II[-1, -1, p, -1][t]), (* HIV to IC *)
+     
+     trans4'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (Iall[p][t] - 
+         II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] - 
+         II[-1, -1, p, -1][t]), (* HIV to HIV *)
+     
+     qem'[t] == \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(-1\), \(-1\), l]\ \(II[\(-1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(-1\), l]\ \(II[\(+1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(+1\), l]\ \(II[\(+1\), \(+1\), p, l]\)[t]\)\)
+     
+     };
+   
+   n = 1419623;
+   ha = prev;
+   ic = 1 - ha;
+   hh = 0.93;
+   aa = 1 - hh;
+   htb = 0.0257;
+   atb = htb;
+   dtb = 0.077;
+   stb = 1 - dtb;
+   htbn = 1 - htb;
+   atbn = 1 - atb;
+   itb = 0.0029; 
+   itbn = 1 - itb;
+   
+   IC[pp_, noq_, noaids_] :=
+    If[noaids,
+     Block[{withaids = IC[pp, noq, False]},
+      Table[
+       withaids[[i, 1]] == Which[
+         i == 1, Plus @@ (withaids[[1 ;; 5, 2]]),
+         i == 6, Plus @@ (withaids[[6 ;; 10, 2]]),
+         i == 11, Plus @@ (withaids[[11 ;; 18, 2]]),
+         i == 19, Plus @@ (withaids[[{19, 25, 31}, 2]]),
+         i == 20, Plus @@ (withaids[[{20, 26, 32}, 2]]),
+         i == 21, Plus @@ (withaids[[{21, 27, 33}, 2]]),
+         i == 22, Plus @@ (withaids[[{22, 28, 34}, 2]]),
+         i == 23, Plus @@ (withaids[[{23, 29, 35, 37}, 2]]),
+         i == 24, Plus @@ (withaids[[{24, 30, 36, 38}, 2]]),
+         True, 0
+         ],
+       {i, 1, Length[withaids]}]
+      ]
+     ,
+     {S[-1, -1][0] == n ic itbn 0.5 + If[noaids,
+         (1 - pp) (n ha aa atbn 0.5) +
+          (1 - pp) (n ha hh htbn 0.5) +
+          pp (n ha aa atbn 0.5) +
+          pp (n ha hh htbn 0.5),
+         0],
+      S[+1, -1][0] == (1 - pp) (n If[noaids, 0, ha] aa atbn 0.5),
+      S[+1, +1][0] == (1 - pp) (n If[noaids, 0, ha] hh htbn 0.5),
+      Sp[+1, -1][0] == pp (n If[noaids, 0, ha] aa atbn 0.5),
+      Sp[+1, +1][0] == pp (n If[noaids, 0, ha] hh htbn 0.5),
+      
+      R[-1, -1][0] == 
+       n If[noaids, 1, ic] itbn - S[-1, -1][0] + If[noaids,
+         n ha aa atbn - S[+1, -1][0] - Sp[+1, -1][0] +
+          n ha hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+         0],
+      R[+1, -1][0] == 
+       n If[noaids, 0, ha] aa atbn - S[+1, -1][0] - Sp[+1, -1][0],
+      R[+1, +1][0] == 
+       n If[noaids, 0, ha] hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+      Rp[+1, -1][0] == 0,
+      Rp[+1, +1][0] == 0,
+      
+      EE[-1, -1, p][0] == 0,
+      EE[-1, -1, q][0] == 0,
+      
+      EE[+1, -1, p][0] == 0,
+      EE[+1, -1, q][0] == 0,
+      
+      EE[+1, +1, p][0] == 0,
+      EE[+1, +1, q][0] == 0,
+      
+      Ep[+1, -1][0] == 0,
+      Ep[+1, +1][0] == 0,
+      
+      II[-1, -1, p, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[+1] + 
+          n ha hh htb If[noq, 1, stb] c[+1], 0],
+      II[-1, -1, p, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[00] + 
+          n ha hh htb If[noq, 1, stb] c[00], 0],
+      II[-1, -1, p, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[-1] + 
+          n ha hh htb If[noq, 1, stb] c[-1], 0],
+      II[-1, -1, q, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[+1] + 
+          n ha hh htb If[noq, 0, dtb] c[+1], 0],
+      II[-1, -1, q, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[00] + 
+          n ha hh htb If[noq, 0, dtb] c[00], 0],
+      II[-1, -1, q, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[-1] + 
+          n ha hh htb If[noq, 0, dtb] c[-1], 0],
+      
+      II[+1, -1, p, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[+1],
+      II[+1, -1, p, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[00],
+      II[+1, -1, p, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[-1],
+      II[+1, -1, q, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[+1],
+      II[+1, -1, q, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[00],
+      II[+1, -1, q, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[-1],
+      
+      II[+1, +1, p, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[+1],
+      II[+1, +1, p, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[00],
+      II[+1, +1, p, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[-1],
+      II[+1, +1, q, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[+1],
+      II[+1, +1, q, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[00],
+      II[+1, +1, q, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[-1],
+      
+      Ip[+1, -1, q, +1][0] == 0,
+      Ip[+1, +1, q, +1][0] == 0,
+      
+      trans1[0] == 0,
+      trans2[0] == 0,
+      trans3[0] == 0,
+      trans4[0] == 0,
+      qem[0] == 0
+      
+      }
+     ];
+   
+   Return[
+    {0,
+     NDSolveValue[
+      Evaluate[Join[EQN[0.5, False], IC[0.5, False, False]]], 
+      Iall[q][365]/(Iall[p][365] + Iall[q][365]), {t, 0, 365}],
+     NDSolveValue[
+      Evaluate[Join[EQN[1.2, False], IC[0.5, False, False]]], 
+      Iall[q][365]/(Iall[p][365] + Iall[q][365]), {t, 0, 365}],
+     1
+     }
+    ]
+   ];
+
+SSHH2[prev_: 0.274] := Module[{},
+   Clear[S, Sp, EE, II, R, Iall, Ep, Ip, Rp, dv, db, t, qem, p, q];
+   
+   c[+1] = 0.2;
+   c[00] = 0.5;
+   c[-1] = 0.3;
+   
+   \[Rho][-1, -1] = 0.001;
+   \[Rho][+1, -1] = 0.01;
+   \[Rho][+1, +1] = 0.002;
+   
+   \[Gamma][-1, -1, p, +1] = \[Gamma][+1, +1, p, +1] = 3.0 10^-3;
+   \[Gamma][-1, -1, p, 00] = \[Gamma][+1, +1, p, 00] = 2.0 10^-3;
+   \[Gamma][-1, -1, p, -1] = \[Gamma][+1, +1, p, -1] = 9.13 10^-4;
+   
+   \[Alpha]x = 0.5; 
+   
+   \[Gamma][+1, +1, p, +1] = \[Alpha]x \[Gamma][+1, +1, p, +1];
+   \[Gamma][+1, +1, p, 00] = \[Alpha]x \[Gamma][+1, +1, p, 00];
+   \[Gamma][+1, +1, p, -1] = \[Alpha]x \[Gamma][+1, +1, p, -1];
+   
+   \[Gamma][-1, -1, 
+     q, +1] = \[Gamma][+1, +1, q, +1] = \[Gamma][-1, -1, p, +1];
+   \[Gamma][-1, -1, q, 
+     00] = \[Gamma][+1, +1, q, 00] = \[Gamma][-1, -1, p, 00];
+   \[Gamma][-1, -1, 
+     q, -1] = \[Gamma][+1, +1, q, -1] = \[Gamma][-1, -1, p, -1];
+   
+   \[Gamma][+1, -1, p, +1] = 2.0 10^-3;
+   \[Gamma][+1, -1, p, 00] = 1.5 10^-3;
+   \[Gamma][+1, -1, p, -1] = 3.0 10^-4;
+   
+   \[Gamma][+1, -1, q, +1] = \[Gamma][+1, -1, p, +1];
+   \[Gamma][+1, -1, q, 00] = \[Gamma][+1, -1, p, 00];
+   \[Gamma][+1, -1, q, -1] = \[Gamma][+1, -1, p, -1];
+   
+   \[Phi][-1, -1, +1] = 0.011515597;
+   \[Phi][-1, -1, 00] = 0.024290712;
+   \[Phi][-1, -1, -1] = 0.002272815;
+   
+   \[Phi][+1, -1, +1] = 0.023750918;
+   \[Phi][+1, -1, 00] = 0.042417655;
+   \[Phi][+1, -1, -1] = 0.010312899;
+   
+   \[Phi][+1, +1, +1] = 0.011515597;
+   \[Phi][+1, +1, 00] = 0.024290712;
+   \[Phi][+1, +1, -1] = 0.002272815;
+   
+   \[Theta][-1, 00] = 1.05 10^-2;
+   \[Theta][00, -1] = 1.05 10^-2;
+   
+   \[Beta]0 = 1/10 1/365 8.5 10^-6 1/10^6; 
+   
+   \[Beta][-1, -1, q][cf_] = \[Beta]0 n ic;
+   \[Beta][-1, -1, p][cf_] = 
+    1/cf \[Gamma][-1, -1, q, +1]/\[Gamma][-1, -1, 
+      q, -1] \[Beta][-1, -1, q][cf];
+   
+   \[Beta][+1, -1, q][cf_] = 1.1 \[Beta]0 n (1 - ic) aa;
+   \[Beta][+1, -1, p][cf_] = 
+    1/cf \[Gamma][+1, -1, q, +1]/\[Gamma][+1, -1, 
+      q, -1] \[Beta][+1, -1, q][cf];
+   
+   \[Beta][+1, +1, q][cf_] = \[Beta]0 n (1 - ic) hh; 
+   \[Beta][+1, +1, p][cf_] = 
+    1/cf \[Gamma][+1, +1, q, +1]/\[Gamma][+1, +1, 
+      q, -1] \[Beta][+1, +1, q][cf];
+   \[Zeta]0 = 1/365 0.88; 
+   
+   \[Zeta][-1, -1, q] = \[Zeta]0; 
+   \[Zeta][-1, -1, p] = \[Zeta]0;
+   
+   \[Zeta][+1, -1, q] = 1.1 \[Zeta]0;
+   \[Zeta][+1, -1, p] = 1.1 \[Zeta]0;
+   
+   \[Zeta][+1, +1, q] = \[Zeta]0 ;
+   \[Zeta][+1, +1, p] = \[Zeta]0;
+   \[Omega] = 4.45 10^-5;
+   \[Omega]b = 8.22 10^-4;
+   \[Omega]bv = 3.3 \[Omega]b;
+   \[Omega]v = 2 10^-3;
+   
+   \[Alpha] = 6.9 10^-5;
+   MyEqS[i_, j_][
+     cf_] := -(\[Beta][i, j, p] [cf] Iall[p][t] + \[Beta][i, j, q] [
+           cf] Iall[q][t]) S[i, j][t] +
+     \[Rho][i, j] R[i, j][t] - \[Omega] S[i, j][t];
+   MyEqE[i_, j_, k_][
+     cf_] := \[Beta][i, j, k][cf] S[i, j][t] Iall[k][t] - \[Zeta][i, 
+       j, k] EE[i, j, k][t] - \[Omega] EE[i, j, k][t];
+   MyEqI[i_, j_, k_, l_, 
+     noq_] := \[Zeta][i, j, k] c[l] EE[i, j, k][t] - \[Gamma][i, j, k,
+        l] II[i, j, k, l][t] + 
+     If[SameQ[k, p], -1, +1] If[noq, 
+       0, \[Phi][i, j, l] ] II[i, j, p, l][t] + 
+     Which[l == +1, 0, l == 0, -1, 
+       l == -1, +1] (\[Theta][00, -1] II[i, j, k, 00][
+          t] - \[Theta][-1, 00] II[i, j, k, -1][t]) + -\[Omega] II[i, 
+        j, k, l][t];
+   MyEqR[i_, j_] := \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \(1\)]\((\[Gamma][i, 
+          j, p, l] \(II[i, j, p, l]\)[t] + \[Gamma][i, j, q, 
+          l] \(II[i, j, q, l]\)[t])\)\) - \[Rho][i, j] R[i, j][
+       t] - \[Omega] R[i, j][t];
+   EQN[cf_, noq_] := {
+     
+     S[-1, -1]'[t] == MyEqS[-1, -1][cf] +
+       \[Alpha] (S[-1, -1][t] + S[+1, +1][t] + Sp[+1, +1][t] +
+          EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, +1, p][t] + 
+          EE[+1, +1, q][t] + Ep[+1, +1][t] +
+          II[-1, -1, p, +1][t] + II[+1, +1, p, +1][t] +
+          R[-1, -1][t] + R[+1, +1][t] + Rp[+1, +1][t]),
+     
+     S[+1, -1]'[t] == MyEqS[+1, -1][cf] +
+       \[Alpha] (S[+1, -1][t] + EE[+1, -1, p][t] + EE[+1, -1, q][t] + 
+          R[+1, -1][t]) -
+       \[Omega]v S[+1, -1][t],
+     
+     S[+1, +1]'[t] == MyEqS[+1, +1][cf],
+     
+     Sp[+1, -1]'[
+       t] == -\[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] + \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega] Sp[+1, -1][
+         t] - \[Omega]v Sp[+1, -1][t],
+     
+     Sp[+1, +1]'[
+       t] == -\[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] + \[Rho][+1, +1] Rp[+1, -1][t] - \[Omega] Sp[+1, +1][t]
+       + \[Alpha] (Sp[+1, -1][t] + Ep[+1, -1][t] + Rp[+1, -1][t]),
+     
+     EE[-1, -1, p]'[t] == MyEqE[-1, -1, p][cf],
+     EE[-1, -1, q]'[t] == If[noq, 0, MyEqE[-1, -1, q][cf]],
+     
+     EE[+1, -1, p]'[t] == 
+      MyEqE[+1, -1, p][cf] - \[Omega]v EE[+1, -1, p][t],
+     EE[+1, -1, q]'[t] == 
+      If[noq, 0, MyEqE[+1, -1, q][cf] - \[Omega]v EE[+1, -1, q][t]],
+     
+     EE[+1, +1, p]'[t] == MyEqE[+1, +1, p][cf],
+     EE[+1, +1, q]'[t] == MyEqE[+1, +1, q][cf],
+     
+     Ep[+1, -1]'[
+       t] == \[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] - \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][
+         t] - \[Omega]v Ep[+1, -1][t],
+     Ep[+1, +1]'[
+       t] == \[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] - \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t],
+     
+     Eall[t] == 
+      EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, -1, p][t] + 
+       EE[+1, -1, q][t] + EE[+1, +1, p][t] + EE[+1, +1, q][t] + 
+       Ep[+1, -1][t] + Ep[+1, +1][t],
+     
+     dEp[t] == \[Beta][-1, -1, p][cf] S[-1, -1][t] Iall[p][
+         t] + \[Beta][+1, -1, p][cf] S[+1, -1][t] Iall[p][
+         t] + \[Beta][+1, +1, p][cf] S[+1, +1][t] Iall[p][t],
+     
+     II[-1, -1, p, +1]'[t] == MyEqI[-1, -1, p, +1, noq],
+     II[-1, -1, p, 00]'[t] == 
+      MyEqI[-1, -1, p, 00, 
+        noq] + \[Alpha] (II[-1, -1, p, 00][t] + II[+1, +1, p, 00][t]) -
+       \[Omega]b II[-1, -1, p, 00][t],
+     II[-1, -1, p, -1]'[t] == 
+      MyEqI[-1, -1, p, -1, 
+        noq] + \[Alpha] (II[-1, -1, p, -1][t] + II[+1, +1, p, -1][t]) -
+       \[Omega]b II[-1, -1, p, -1][t],
+     II[-1, -1, q, +1]'[t] == 
+      MyEqI[-1, -1, q, +1, 
+        noq] + \[Alpha] (II[-1, -1, q, +1][t] + II[+1, +1, q, +1][t])
+       - \[Omega]b II[-1, -1, q, +1][t],
+     II[-1, -1, q, 00]'[t] == 
+      MyEqI[-1, -1, q, 00, 
+        noq] + \[Alpha] (II[-1, -1, q, 00][t] + II[+1, +1, q, 00][t]) -
+       \[Omega]b II[-1, -1, q, 00][t],
+     II[-1, -1, q, -1]'[t] == MyEqI[-1, -1, q, -1, noq] +
+       \[Alpha] (II[-1, -1, q, -1][t] + II[+1, +1, q, -1][t] + 
+          Ip[+1, +1, q, +1][t]) -
+       \[Omega]b II[-1, -1, q, -1][t],
+     
+     II[+1, -1, p, +1]'[t] == 
+      MyEqI[+1, -1, p, +1, noq] - \[Omega]v II[+1, -1, p, +1][t],
+     II[+1, -1, p, 00]'[t] == 
+      MyEqI[+1, -1, p, 00, 
+        noq] + \[Alpha] II[+1, -1, p, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, 00][t],
+     II[+1, -1, p, -1]'[t] == 
+      MyEqI[+1, -1, p, -1, 
+        noq] + \[Alpha] II[+1, -1, p, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, -1][t],
+     II[+1, -1, q, +1]'[t] == 
+      MyEqI[+1, -1, q, +1, 
+        noq] + \[Alpha] II[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, +1][t],
+     II[+1, -1, q, 00]'[t] == 
+      MyEqI[+1, -1, q, 00, 
+        noq] + \[Alpha] II[+1, -1, q, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, 00][t],
+     II[+1, -1, q, -1]'[t] == 
+      MyEqI[+1, -1, q, -1, 
+        noq] + \[Alpha] II[+1, -1, q, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, -1][t],
+     
+     II[+1, +1, p, +1]'[t] == MyEqI[+1, +1, p, +1, noq],
+     II[+1, +1, p, 00]'[t] == 
+      MyEqI[+1, +1, p, 00, noq] - \[Omega]b II[+1, +1, p, 00][t],
+     II[+1, +1, p, -1]'[t] == 
+      MyEqI[+1, +1, p, -1, noq] - \[Omega]b II[+1, +1, p, -1][t],
+     II[+1, +1, q, +1]'[t] == 
+      MyEqI[+1, +1, q, +1, noq] - \[Omega]b II[+1, +1, q, +1][t],
+     II[+1, +1, q, 00]'[t] == 
+      MyEqI[+1, +1, q, 00, noq] - \[Omega]b II[+1, +1, q, 00][t],
+     II[+1, +1, q, -1]'[t] == 
+      MyEqI[+1, +1, q, -1, noq] - \[Omega]b II[+1, +1, q, -1][t],
+     
+     Ip[+1, -1, q, +1]'[
+       t] == \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][t] - \[Gamma][+1, -1,
+          q, +1] Ip[+1, -1, q, +1][t]
+       + \[Alpha] Ip[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]b) Ip[+1, -1, q, +1][t],
+     
+     Ip[+1, +1, q, +1]'[
+       t] == \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t] - \[Gamma][+1, +1,
+          q, +1] Ip[+1, +1, q, +1][t] -
+       \[Omega]b Ip[+1, +1, q, +1][t],
+     
+     Iall[p][t] ==
+      II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+       II[-1, -1, p, -1][t] +
+       II[+1, -1, p, +1][t] + II[+1, -1, p, 00][t] + 
+       II[+1, -1, p, -1][t] +
+       II[+1, +1, p, +1][t] + II[+1, +1, p, 00][t] + 
+       II[+1, +1, p, -1][t],
+     
+     Iall[q][t] ==
+      II[-1, -1, q, +1][t] + II[-1, -1, q, 00][t] + 
+       II[-1, -1, q, -1][t] +
+       II[+1, -1, q, +1][t] + II[+1, -1, q, 00][t] + 
+       II[+1, -1, q, -1][t] +
+       II[+1, +1, q, +1][t] + II[+1, +1, q, 00][t] + 
+       II[+1, +1, q, -1][t] + Ip[+1, +1, q, +1][t] + 
+       Ip[+1, -1, q, +1][t],
+     
+     R[-1, -1]'[t] == MyEqR[-1, -1],
+     
+     R[+1, -1]'[t] == MyEqR[+1, -1] - \[Omega]v R[+1, -1][t],
+     
+     R[+1, +1]'[t] == MyEqR[+1, +1],
+     
+     Rp[+1, -1]'[
+       t] == \[Gamma][+1, -1, q, +1] Ip[+1, -1, q, +1][
+         t] - \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega]v Rp[+1, -1][t],
+     Rp[+1, +1]'[
+       t] == \[Gamma][+1, +1, q, +1] Ip[+1, +1, q, +1][
+         t] - \[Rho][+1, +1] Rp[+1, +1][t],
+     
+     trans1'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+         II[-1, -1, p, -1][t]), (* IC to IC *)
+     
+     trans2'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (II[-1, -1, 
+           p, +1][t] + II[-1, -1, p, 00][t] + II[-1, -1, p, -1][t]), (* 
+     IC to HIV *)
+     
+     trans3'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (Iall[p][t] - II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] -
+          II[-1, -1, p, -1][t]), (* HIV to IC *)
+     
+     trans4'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (Iall[p][t] - 
+         II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] - 
+         II[-1, -1, p, -1][t]), (* HIV to HIV *)
+     
+     qem'[t] == \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(-1\), \(-1\), l]\ \(II[\(-1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(-1\), l]\ \(II[\(+1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(+1\), l]\ \(II[\(+1\), \(+1\), p, l]\)[t]\)\)
+     
+     };
+   
+   n = 1419623;
+   ha = prev;
+   ic = 1 - ha;
+   hh = 0.93;
+   aa = 1 - hh;
+   htb = 0.0257;
+   atb = htb;
+   dtb = 0.077;
+   stb = 1 - dtb;
+   htbn = 1 - htb;
+   atbn = 1 - atb;
+   itb = 0.0029; 
+   itbn = 1 - itb;
+   
+   IC[pp_, noq_, noaids_] :=
+    If[noaids,
+     Block[{withaids = IC[pp, noq, False]},
+      Table[
+       withaids[[i, 1]] == Which[
+         i == 1, Plus @@ (withaids[[1 ;; 5, 2]]),
+         i == 6, Plus @@ (withaids[[6 ;; 10, 2]]),
+         i == 11, Plus @@ (withaids[[11 ;; 18, 2]]),
+         i == 19, Plus @@ (withaids[[{19, 25, 31}, 2]]),
+         i == 20, Plus @@ (withaids[[{20, 26, 32}, 2]]),
+         i == 21, Plus @@ (withaids[[{21, 27, 33}, 2]]),
+         i == 22, Plus @@ (withaids[[{22, 28, 34}, 2]]),
+         i == 23, Plus @@ (withaids[[{23, 29, 35, 37}, 2]]),
+         i == 24, Plus @@ (withaids[[{24, 30, 36, 38}, 2]]),
+         True, 0
+         ],
+       {i, 1, Length[withaids]}]
+      ]
+     ,
+     {S[-1, -1][0] == n ic itbn 0.5 + If[noaids,
+         (1 - pp) (n ha aa atbn 0.5) +
+          (1 - pp) (n ha hh htbn 0.5) +
+          pp (n ha aa atbn 0.5) +
+          pp (n ha hh htbn 0.5),
+         0],
+      S[+1, -1][0] == (1 - pp) (n If[noaids, 0, ha] aa atbn 0.5),
+      S[+1, +1][0] == (1 - pp) (n If[noaids, 0, ha] hh htbn 0.5),
+      Sp[+1, -1][0] == pp (n If[noaids, 0, ha] aa atbn 0.5),
+      Sp[+1, +1][0] == pp (n If[noaids, 0, ha] hh htbn 0.5),
+      
+      R[-1, -1][0] == 
+       n If[noaids, 1, ic] itbn - S[-1, -1][0] + If[noaids,
+         n ha aa atbn - S[+1, -1][0] - Sp[+1, -1][0] +
+          n ha hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+         0],
+      R[+1, -1][0] == 
+       n If[noaids, 0, ha] aa atbn - S[+1, -1][0] - Sp[+1, -1][0],
+      R[+1, +1][0] == 
+       n If[noaids, 0, ha] hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+      Rp[+1, -1][0] == 0,
+      Rp[+1, +1][0] == 0,
+      
+      EE[-1, -1, p][0] == 0,
+      EE[-1, -1, q][0] == 0,
+      
+      EE[+1, -1, p][0] == 0,
+      EE[+1, -1, q][0] == 0,
+      
+      EE[+1, +1, p][0] == 0,
+      EE[+1, +1, q][0] == 0,
+      
+      Ep[+1, -1][0] == 0,
+      Ep[+1, +1][0] == 0,
+      
+      II[-1, -1, p, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[+1] + 
+          n ha hh htb If[noq, 1, stb] c[+1], 0],
+      II[-1, -1, p, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[00] + 
+          n ha hh htb If[noq, 1, stb] c[00], 0],
+      II[-1, -1, p, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[-1] + 
+          n ha hh htb If[noq, 1, stb] c[-1], 0],
+      II[-1, -1, q, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[+1] + 
+          n ha hh htb If[noq, 0, dtb] c[+1], 0],
+      II[-1, -1, q, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[00] + 
+          n ha hh htb If[noq, 0, dtb] c[00], 0],
+      II[-1, -1, q, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[-1] + 
+          n ha hh htb If[noq, 0, dtb] c[-1], 0],
+      
+      II[+1, -1, p, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[+1],
+      II[+1, -1, p, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[00],
+      II[+1, -1, p, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[-1],
+      II[+1, -1, q, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[+1],
+      II[+1, -1, q, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[00],
+      II[+1, -1, q, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[-1],
+      
+      II[+1, +1, p, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[+1],
+      II[+1, +1, p, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[00],
+      II[+1, +1, p, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[-1],
+      II[+1, +1, q, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[+1],
+      II[+1, +1, q, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[00],
+      II[+1, +1, q, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[-1],
+      
+      Ip[+1, -1, q, +1][0] == 0,
+      Ip[+1, +1, q, +1][0] == 0,
+      
+      trans1[0] == 0,
+      trans2[0] == 0,
+      trans3[0] == 0,
+      trans4[0] == 0,
+      qem[0] == 0
+      
+      }
+     ];
+   
+   Return[
+    
+    {0,
+     NDSolveValue[
+      Evaluate[
+       Join[EQN[0.5, False], 
+        IC[0.5, False, False]]], (Iall[q][365] - 
+         II[-1, -1, q, -1][365] - II[-1, -1, q, 00][365] - 
+         II[-1, -1, q, +1][365])/(Iall[p][365] + Iall[q][365] - 
+         II[-1, -1, q, -1][365] - II[-1, -1, q, 00][365] - 
+         II[-1, -1, q, +1][365] - II[-1, -1, p, -1][365] - 
+         II[-1, -1, p, 00][365] - II[-1, -1, p, +1][365]), {t, 0, 
+       365}],
+     NDSolveValue[
+      Evaluate[
+       Join[EQN[1.2, False], 
+        IC[0.5, False, False]]], (Iall[q][365] - 
+         II[-1, -1, q, -1][365] - II[-1, -1, q, 00][365] - 
+         II[-1, -1, q, +1][365])/(Iall[p][365] + Iall[q][365] - 
+         II[-1, -1, q, -1][365] - II[-1, -1, q, 00][365] - 
+         II[-1, -1, q, +1][365] - II[-1, -1, p, -1][365] - 
+         II[-1, -1, p, 00][365] - II[-1, -1, p, +1][365]), {t, 0, 
+       365}],
+     1
+     }
+    ]
+   ];
+
+SSHHAbs[prev_: 0.274] := Module[{},
+   Clear[S, Sp, EE, II, R, Iall, Ep, Ip, Rp, dv, db, t, qem, p, q];
+   
+   c[+1] = 0.2;
+   c[00] = 0.5;
+   c[-1] = 0.3;
+   
+   \[Rho][-1, -1] = 0.001;
+   \[Rho][+1, -1] = 0.01;
+   \[Rho][+1, +1] = 0.002;
+   
+   \[Gamma][-1, -1, p, +1] = \[Gamma][+1, +1, p, +1] = 3.0 10^-3;
+   \[Gamma][-1, -1, p, 00] = \[Gamma][+1, +1, p, 00] = 2.0 10^-3;
+   \[Gamma][-1, -1, p, -1] = \[Gamma][+1, +1, p, -1] = 9.13 10^-4;
+   
+   \[Alpha]x = 0.5; 
+   
+   \[Gamma][+1, +1, p, +1] = \[Alpha]x \[Gamma][+1, +1, p, +1];
+   \[Gamma][+1, +1, p, 00] = \[Alpha]x \[Gamma][+1, +1, p, 00];
+   \[Gamma][+1, +1, p, -1] = \[Alpha]x \[Gamma][+1, +1, p, -1];
+   
+   \[Gamma][-1, -1, 
+     q, +1] = \[Gamma][+1, +1, q, +1] = \[Gamma][-1, -1, p, +1];
+   \[Gamma][-1, -1, q, 
+     00] = \[Gamma][+1, +1, q, 00] = \[Gamma][-1, -1, p, 00];
+   \[Gamma][-1, -1, 
+     q, -1] = \[Gamma][+1, +1, q, -1] = \[Gamma][-1, -1, p, -1];
+   
+   \[Gamma][+1, -1, p, +1] = 2.0 10^-3;
+   \[Gamma][+1, -1, p, 00] = 1.5 10^-3;
+   \[Gamma][+1, -1, p, -1] = 3.0 10^-4;
+   
+   \[Gamma][+1, -1, q, +1] = \[Gamma][+1, -1, p, +1];
+   \[Gamma][+1, -1, q, 00] = \[Gamma][+1, -1, p, 00];
+   \[Gamma][+1, -1, q, -1] = \[Gamma][+1, -1, p, -1];
+   
+   \[Phi][-1, -1, +1] = 0.011515597;
+   \[Phi][-1, -1, 00] = 0.024290712;
+   \[Phi][-1, -1, -1] = 0.002272815;
+   
+   \[Phi][+1, -1, +1] = 0.023750918;
+   \[Phi][+1, -1, 00] = 0.042417655;
+   \[Phi][+1, -1, -1] = 0.010312899;
+   
+   \[Phi][+1, +1, +1] = 0.011515597;
+   \[Phi][+1, +1, 00] = 0.024290712;
+   \[Phi][+1, +1, -1] = 0.002272815;
+   
+   \[Theta][-1, 00] = 1.05 10^-2;
+   \[Theta][00, -1] = 1.05 10^-2;
+   
+   \[Beta]0 = 1/10 1/365 8.5 10^-6 1/10^6;
+   
+   \[Beta][-1, -1, q][cf_] = \[Beta]0 n ic;
+   \[Beta][-1, -1, p][cf_] = 
+    1/cf \[Gamma][-1, -1, q, +1]/\[Gamma][-1, -1, 
+      q, -1] \[Beta][-1, -1, q][cf];
+   
+   \[Beta][+1, -1, q][cf_] = 1.1 \[Beta]0 n (1 - ic) aa;
+   \[Beta][+1, -1, p][cf_] = 
+    1/cf \[Gamma][+1, -1, q, +1]/\[Gamma][+1, -1, 
+      q, -1] \[Beta][+1, -1, q][cf];
+   
+   \[Beta][+1, +1, q][cf_] = \[Beta]0 n (1 - ic) hh; 
+   \[Beta][+1, +1, p][cf_] = 
+    1/cf \[Gamma][+1, +1, q, +1]/\[Gamma][+1, +1, 
+      q, -1] \[Beta][+1, +1, q][cf];
+   \[Zeta]0 = 1/365 0.88; 
+   
+   \[Zeta][-1, -1, q] = \[Zeta]0; 
+   \[Zeta][-1, -1, p] = \[Zeta]0;
+   
+   \[Zeta][+1, -1, q] = 1.1 \[Zeta]0;
+   \[Zeta][+1, -1, p] = 1.1 \[Zeta]0;
+   
+   \[Zeta][+1, +1, q] = \[Zeta]0 ;
+   \[Zeta][+1, +1, p] = \[Zeta]0;
+   \[Omega] = 4.45 10^-5;
+   \[Omega]b = 8.22 10^-4;
+   \[Omega]bv = 3.3 \[Omega]b;
+   \[Omega]v = 2 10^-3;
+   
+   \[Alpha] = 6.9 10^-5;
+   MyEqS[i_, j_][
+     cf_] := -(\[Beta][i, j, p] [cf] Iall[p][t] + \[Beta][i, j, q] [
+           cf] Iall[q][t]) S[i, j][t] +
+     \[Rho][i, j] R[i, j][t] - \[Omega] S[i, j][t];
+   MyEqE[i_, j_, k_][
+     cf_] := \[Beta][i, j, k][cf] S[i, j][t] Iall[k][t] - \[Zeta][i, 
+       j, k] EE[i, j, k][t] - \[Omega] EE[i, j, k][t];
+   MyEqI[i_, j_, k_, l_, 
+     noq_] := \[Zeta][i, j, k] c[l] EE[i, j, k][t] - \[Gamma][i, j, k,
+        l] II[i, j, k, l][t] + 
+     If[SameQ[k, p], -1, +1] If[noq, 
+       0, \[Phi][i, j, l] ] II[i, j, p, l][t] + 
+     Which[l == +1, 0, l == 0, -1, 
+       l == -1, +1] (\[Theta][00, -1] II[i, j, k, 00][
+          t] - \[Theta][-1, 00] II[i, j, k, -1][t]) + -\[Omega] II[i, 
+        j, k, l][t];
+   MyEqR[i_, j_] := \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \(1\)]\((\[Gamma][i, 
+          j, p, l] \(II[i, j, p, l]\)[t] + \[Gamma][i, j, q, 
+          l] \(II[i, j, q, l]\)[t])\)\) - \[Rho][i, j] R[i, j][
+       t] - \[Omega] R[i, j][t];
+   EQN[cf_, noq_] := {
+     
+     S[-1, -1]'[t] == MyEqS[-1, -1][cf] +
+       \[Alpha] (S[-1, -1][t] + S[+1, +1][t] + Sp[+1, +1][t] +
+          EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, +1, p][t] + 
+          EE[+1, +1, q][t] + Ep[+1, +1][t] +
+          II[-1, -1, p, +1][t] + II[+1, +1, p, +1][t] +
+          R[-1, -1][t] + R[+1, +1][t] + Rp[+1, +1][t]),
+     
+     S[+1, -1]'[t] == MyEqS[+1, -1][cf] +
+       \[Alpha] (S[+1, -1][t] + EE[+1, -1, p][t] + EE[+1, -1, q][t] + 
+          R[+1, -1][t]) -
+       \[Omega]v S[+1, -1][t],
+     
+     S[+1, +1]'[t] == MyEqS[+1, +1][cf],
+     
+     Sp[+1, -1]'[
+       t] == -\[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] + \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega] Sp[+1, -1][
+         t] - \[Omega]v Sp[+1, -1][t],
+     
+     Sp[+1, +1]'[
+       t] == -\[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] + \[Rho][+1, +1] Rp[+1, -1][t] - \[Omega] Sp[+1, +1][t]
+       + \[Alpha] (Sp[+1, -1][t] + Ep[+1, -1][t] + Rp[+1, -1][t]),
+     
+     EE[-1, -1, p]'[t] == MyEqE[-1, -1, p][cf],
+     EE[-1, -1, q]'[t] == If[noq, 0, MyEqE[-1, -1, q][cf]],
+     
+     EE[+1, -1, p]'[t] == 
+      MyEqE[+1, -1, p][cf] - \[Omega]v EE[+1, -1, p][t],
+     EE[+1, -1, q]'[t] == 
+      If[noq, 0, MyEqE[+1, -1, q][cf] - \[Omega]v EE[+1, -1, q][t]],
+     
+     EE[+1, +1, p]'[t] == MyEqE[+1, +1, p][cf],
+     EE[+1, +1, q]'[t] == MyEqE[+1, +1, q][cf],
+     
+     Ep[+1, -1]'[
+       t] == \[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] - \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][
+         t] - \[Omega]v Ep[+1, -1][t],
+     Ep[+1, +1]'[
+       t] == \[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] - \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t],
+     
+     Eall[t] == 
+      EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, -1, p][t] + 
+       EE[+1, -1, q][t] + EE[+1, +1, p][t] + EE[+1, +1, q][t] + 
+       Ep[+1, -1][t] + Ep[+1, +1][t],
+     
+     dEp[t] == \[Beta][-1, -1, p][cf] S[-1, -1][t] Iall[p][
+         t] + \[Beta][+1, -1, p][cf] S[+1, -1][t] Iall[p][
+         t] + \[Beta][+1, +1, p][cf] S[+1, +1][t] Iall[p][t],
+     
+     II[-1, -1, p, +1]'[t] == MyEqI[-1, -1, p, +1, noq],
+     II[-1, -1, p, 00]'[t] == 
+      MyEqI[-1, -1, p, 00, 
+        noq] + \[Alpha] (II[-1, -1, p, 00][t] + II[+1, +1, p, 00][t]) -
+       \[Omega]b II[-1, -1, p, 00][t],
+     II[-1, -1, p, -1]'[t] == 
+      MyEqI[-1, -1, p, -1, 
+        noq] + \[Alpha] (II[-1, -1, p, -1][t] + II[+1, +1, p, -1][t]) -
+       \[Omega]b II[-1, -1, p, -1][t],
+     II[-1, -1, q, +1]'[t] == 
+      MyEqI[-1, -1, q, +1, 
+        noq] + \[Alpha] (II[-1, -1, q, +1][t] + II[+1, +1, q, +1][t])
+       - \[Omega]b II[-1, -1, q, +1][t],
+     II[-1, -1, q, 00]'[t] == 
+      MyEqI[-1, -1, q, 00, 
+        noq] + \[Alpha] (II[-1, -1, q, 00][t] + II[+1, +1, q, 00][t]) -
+       \[Omega]b II[-1, -1, q, 00][t],
+     II[-1, -1, q, -1]'[t] == MyEqI[-1, -1, q, -1, noq] +
+       \[Alpha] (II[-1, -1, q, -1][t] + II[+1, +1, q, -1][t] + 
+          Ip[+1, +1, q, +1][t]) -
+       \[Omega]b II[-1, -1, q, -1][t],
+     
+     II[+1, -1, p, +1]'[t] == 
+      MyEqI[+1, -1, p, +1, noq] - \[Omega]v II[+1, -1, p, +1][t],
+     II[+1, -1, p, 00]'[t] == 
+      MyEqI[+1, -1, p, 00, 
+        noq] + \[Alpha] II[+1, -1, p, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, 00][t],
+     II[+1, -1, p, -1]'[t] == 
+      MyEqI[+1, -1, p, -1, 
+        noq] + \[Alpha] II[+1, -1, p, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, -1][t],
+     II[+1, -1, q, +1]'[t] == 
+      MyEqI[+1, -1, q, +1, 
+        noq] + \[Alpha] II[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, +1][t],
+     II[+1, -1, q, 00]'[t] == 
+      MyEqI[+1, -1, q, 00, 
+        noq] + \[Alpha] II[+1, -1, q, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, 00][t],
+     II[+1, -1, q, -1]'[t] == 
+      MyEqI[+1, -1, q, -1, 
+        noq] + \[Alpha] II[+1, -1, q, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, -1][t],
+     
+     II[+1, +1, p, +1]'[t] == MyEqI[+1, +1, p, +1, noq],
+     II[+1, +1, p, 00]'[t] == 
+      MyEqI[+1, +1, p, 00, noq] - \[Omega]b II[+1, +1, p, 00][t],
+     II[+1, +1, p, -1]'[t] == 
+      MyEqI[+1, +1, p, -1, noq] - \[Omega]b II[+1, +1, p, -1][t],
+     II[+1, +1, q, +1]'[t] == 
+      MyEqI[+1, +1, q, +1, noq] - \[Omega]b II[+1, +1, q, +1][t],
+     II[+1, +1, q, 00]'[t] == 
+      MyEqI[+1, +1, q, 00, noq] - \[Omega]b II[+1, +1, q, 00][t],
+     II[+1, +1, q, -1]'[t] == 
+      MyEqI[+1, +1, q, -1, noq] - \[Omega]b II[+1, +1, q, -1][t],
+     
+     Ip[+1, -1, q, +1]'[
+       t] == \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][t] - \[Gamma][+1, -1,
+          q, +1] Ip[+1, -1, q, +1][t]
+       + \[Alpha] Ip[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]b) Ip[+1, -1, q, +1][t],
+     
+     Ip[+1, +1, q, +1]'[
+       t] == \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t] - \[Gamma][+1, +1,
+          q, +1] Ip[+1, +1, q, +1][t] -
+       \[Omega]b Ip[+1, +1, q, +1][t],
+     
+     Iall[p][t] ==
+      II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+       II[-1, -1, p, -1][t] +
+       II[+1, -1, p, +1][t] + II[+1, -1, p, 00][t] + 
+       II[+1, -1, p, -1][t] +
+       II[+1, +1, p, +1][t] + II[+1, +1, p, 00][t] + 
+       II[+1, +1, p, -1][t],
+     
+     Iall[q][t] ==
+      II[-1, -1, q, +1][t] + II[-1, -1, q, 00][t] + 
+       II[-1, -1, q, -1][t] +
+       II[+1, -1, q, +1][t] + II[+1, -1, q, 00][t] + 
+       II[+1, -1, q, -1][t] +
+       II[+1, +1, q, +1][t] + II[+1, +1, q, 00][t] + 
+       II[+1, +1, q, -1][t] + Ip[+1, +1, q, +1][t] + 
+       Ip[+1, -1, q, +1][t],
+     
+     R[-1, -1]'[t] == MyEqR[-1, -1],
+     
+     R[+1, -1]'[t] == MyEqR[+1, -1] - \[Omega]v R[+1, -1][t],
+     
+     R[+1, +1]'[t] == MyEqR[+1, +1],
+     
+     Rp[+1, -1]'[
+       t] == \[Gamma][+1, -1, q, +1] Ip[+1, -1, q, +1][
+         t] - \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega]v Rp[+1, -1][t],
+     Rp[+1, +1]'[
+       t] == \[Gamma][+1, +1, q, +1] Ip[+1, +1, q, +1][
+         t] - \[Rho][+1, +1] Rp[+1, +1][t],
+     
+     trans1'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+         II[-1, -1, p, -1][t]), (* IC to IC *)
+     
+     trans2'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (II[-1, -1, 
+           p, +1][t] + II[-1, -1, p, 00][t] + II[-1, -1, p, -1][t]), (* 
+     IC to HIV *)
+     
+     trans3'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (Iall[p][t] - II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] -
+          II[-1, -1, p, -1][t]), (* HIV to IC *)
+     
+     trans4'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (Iall[p][t] - 
+         II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] - 
+         II[-1, -1, p, -1][t]), (* HIV to HIV *)
+     
+     qem'[t] == \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(-1\), \(-1\), l]\ \(II[\(-1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(-1\), l]\ \(II[\(+1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(+1\), l]\ \(II[\(+1\), \(+1\), p, l]\)[t]\)\)
+     
+     };
+   
+   n = 1419623;
+   ha = prev;
+   ic = 1 - ha;
+   hh = 0.93;
+   aa = 1 - hh;
+   htb = 0.0257;
+   atb = htb;
+   dtb = 0.077;
+   stb = 1 - dtb;
+   htbn = 1 - htb;
+   atbn = 1 - atb;
+   itb = 0.0029; 
+   itbn = 1 - itb;
+   
+   IC[pp_, noq_, noaids_] :=
+    If[noaids,
+     Block[{withaids = IC[pp, noq, False]},
+      Table[
+       withaids[[i, 1]] == Which[
+         i == 1, Plus @@ (withaids[[1 ;; 5, 2]]),
+         i == 6, Plus @@ (withaids[[6 ;; 10, 2]]),
+         i == 11, Plus @@ (withaids[[11 ;; 18, 2]]),
+         i == 19, Plus @@ (withaids[[{19, 25, 31}, 2]]),
+         i == 20, Plus @@ (withaids[[{20, 26, 32}, 2]]),
+         i == 21, Plus @@ (withaids[[{21, 27, 33}, 2]]),
+         i == 22, Plus @@ (withaids[[{22, 28, 34}, 2]]),
+         i == 23, Plus @@ (withaids[[{23, 29, 35, 37}, 2]]),
+         i == 24, Plus @@ (withaids[[{24, 30, 36, 38}, 2]]),
+         True, 0
+         ],
+       {i, 1, Length[withaids]}]
+      ]
+     ,
+     {S[-1, -1][0] == n ic itbn 0.5 + If[noaids,
+         (1 - pp) (n ha aa atbn 0.5) +
+          (1 - pp) (n ha hh htbn 0.5) +
+          pp (n ha aa atbn 0.5) +
+          pp (n ha hh htbn 0.5),
+         0],
+      S[+1, -1][0] == (1 - pp) (n If[noaids, 0, ha] aa atbn 0.5),
+      S[+1, +1][0] == (1 - pp) (n If[noaids, 0, ha] hh htbn 0.5),
+      Sp[+1, -1][0] == pp (n If[noaids, 0, ha] aa atbn 0.5),
+      Sp[+1, +1][0] == pp (n If[noaids, 0, ha] hh htbn 0.5),
+      
+      R[-1, -1][0] == 
+       n If[noaids, 1, ic] itbn - S[-1, -1][0] + If[noaids,
+         n ha aa atbn - S[+1, -1][0] - Sp[+1, -1][0] +
+          n ha hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+         0],
+      R[+1, -1][0] == 
+       n If[noaids, 0, ha] aa atbn - S[+1, -1][0] - Sp[+1, -1][0],
+      R[+1, +1][0] == 
+       n If[noaids, 0, ha] hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+      Rp[+1, -1][0] == 0,
+      Rp[+1, +1][0] == 0,
+      
+      EE[-1, -1, p][0] == 0,
+      EE[-1, -1, q][0] == 0,
+      
+      EE[+1, -1, p][0] == 0,
+      EE[+1, -1, q][0] == 0,
+      
+      EE[+1, +1, p][0] == 0,
+      EE[+1, +1, q][0] == 0,
+      
+      Ep[+1, -1][0] == 0,
+      Ep[+1, +1][0] == 0,
+      
+      II[-1, -1, p, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[+1] + 
+          n ha hh htb If[noq, 1, stb] c[+1], 0],
+      II[-1, -1, p, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[00] + 
+          n ha hh htb If[noq, 1, stb] c[00], 0],
+      II[-1, -1, p, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[-1] + 
+          n ha hh htb If[noq, 1, stb] c[-1], 0],
+      II[-1, -1, q, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[+1] + 
+          n ha hh htb If[noq, 0, dtb] c[+1], 0],
+      II[-1, -1, q, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[00] + 
+          n ha hh htb If[noq, 0, dtb] c[00], 0],
+      II[-1, -1, q, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[-1] + 
+          n ha hh htb If[noq, 0, dtb] c[-1], 0],
+      
+      II[+1, -1, p, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[+1],
+      II[+1, -1, p, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[00],
+      II[+1, -1, p, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[-1],
+      II[+1, -1, q, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[+1],
+      II[+1, -1, q, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[00],
+      II[+1, -1, q, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[-1],
+      
+      II[+1, +1, p, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[+1],
+      II[+1, +1, p, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[00],
+      II[+1, +1, p, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[-1],
+      II[+1, +1, q, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[+1],
+      II[+1, +1, q, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[00],
+      II[+1, +1, q, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[-1],
+      
+      Ip[+1, -1, q, +1][0] == 0,
+      Ip[+1, +1, q, +1][0] == 0,
+      
+      trans1[0] == 0,
+      trans2[0] == 0,
+      trans3[0] == 0,
+      trans4[0] == 0,
+      qem[0] == 0
+      
+      }
+     ];
+   
+   Return[
+    {{
+      NDSolveValue[
+       Evaluate[Join[EQN[0.5, False], IC[0.5, False, False]]], 
+       Iall[q][365], {t, 0, 365}],
+      NDSolveValue[
+       Evaluate[Join[EQN[0.5, False], IC[0.5, False, False]]], 
+       Iall[p][365] + Iall[q][365], {t, 0, 365}]
+      }, {
+      NDSolveValue[
+       Evaluate[Join[EQN[1.2, False], IC[0.5, False, False]]], 
+       Iall[q][365], {t, 0, 365}],
+      NDSolveValue[
+       Evaluate[Join[EQN[1.2, False], IC[0.5, False, False]]], 
+       Iall[p][365] + Iall[q][365], {t, 0, 365}]
+      }}
+    ]
+   ];
+
+SSHHAbs2[prev_: 0.274] := Module[{},
+   Clear[S, Sp, EE, II, R, Iall, Ep, Ip, Rp, dv, db, t, qem, p, q];
+   
+   c[+1] = 0.2;
+   c[00] = 0.5;
+   c[-1] = 0.3;
+   
+   \[Rho][-1, -1] = 0.001;
+   \[Rho][+1, -1] = 0.01;
+   \[Rho][+1, +1] = 0.002;
+   
+   \[Gamma][-1, -1, p, +1] = \[Gamma][+1, +1, p, +1] = 3.0 10^-3;
+   \[Gamma][-1, -1, p, 00] = \[Gamma][+1, +1, p, 00] = 2.0 10^-3;
+   \[Gamma][-1, -1, p, -1] = \[Gamma][+1, +1, p, -1] = 9.13 10^-4;
+   
+   \[Alpha]x = 0.5;
+   
+   \[Gamma][+1, +1, p, +1] = \[Alpha]x \[Gamma][+1, +1, p, +1];
+   \[Gamma][+1, +1, p, 00] = \[Alpha]x \[Gamma][+1, +1, p, 00];
+   \[Gamma][+1, +1, p, -1] = \[Alpha]x \[Gamma][+1, +1, p, -1];
+   
+   \[Gamma][-1, -1, 
+     q, +1] = \[Gamma][+1, +1, q, +1] = \[Gamma][-1, -1, p, +1];
+   \[Gamma][-1, -1, q, 
+     00] = \[Gamma][+1, +1, q, 00] = \[Gamma][-1, -1, p, 00];
+   \[Gamma][-1, -1, 
+     q, -1] = \[Gamma][+1, +1, q, -1] = \[Gamma][-1, -1, p, -1];
+   
+   \[Gamma][+1, -1, p, +1] = 2.0 10^-3;
+   \[Gamma][+1, -1, p, 00] = 1.5 10^-3;
+   \[Gamma][+1, -1, p, -1] = 3.0 10^-4;
+   
+   \[Gamma][+1, -1, q, +1] = \[Gamma][+1, -1, p, +1];
+   \[Gamma][+1, -1, q, 00] = \[Gamma][+1, -1, p, 00];
+   \[Gamma][+1, -1, q, -1] = \[Gamma][+1, -1, p, -1];
+   
+   \[Phi][-1, -1, +1] = 0.011515597;
+   \[Phi][-1, -1, 00] = 0.024290712;
+   \[Phi][-1, -1, -1] = 0.002272815;
+   
+   \[Phi][+1, -1, +1] = 0.023750918;
+   \[Phi][+1, -1, 00] = 0.042417655;
+   \[Phi][+1, -1, -1] = 0.010312899;
+   
+   \[Phi][+1, +1, +1] = 0.011515597;
+   \[Phi][+1, +1, 00] = 0.024290712;
+   \[Phi][+1, +1, -1] = 0.002272815;
+   
+   \[Theta][-1, 00] = 1.05 10^-2;
+   \[Theta][00, -1] = 1.05 10^-2;
+   
+   \[Beta]0 = 1/10 1/365 8.5 10^-6 1/10^6;
+   
+   \[Beta][-1, -1, q][cf_] = \[Beta]0 n ic;
+   \[Beta][-1, -1, p][cf_] = 
+    1/cf \[Gamma][-1, -1, q, +1]/\[Gamma][-1, -1, 
+      q, -1] \[Beta][-1, -1, q][cf];
+   
+   \[Beta][+1, -1, q][cf_] = 1.1 \[Beta]0 n (1 - ic) aa;
+   \[Beta][+1, -1, p][cf_] = 
+    1/cf \[Gamma][+1, -1, q, +1]/\[Gamma][+1, -1, 
+      q, -1] \[Beta][+1, -1, q][cf];
+   
+   \[Beta][+1, +1, q][cf_] = \[Beta]0 n (1 - ic) hh; 
+   \[Beta][+1, +1, p][cf_] = 
+    1/cf \[Gamma][+1, +1, q, +1]/\[Gamma][+1, +1, 
+      q, -1] \[Beta][+1, +1, q][cf];
+   \[Zeta]0 = 1/365 0.88;
+   
+   \[Zeta][-1, -1, q] = \[Zeta]0; 
+   \[Zeta][-1, -1, p] = \[Zeta]0;
+   
+   \[Zeta][+1, -1, q] = 1.1 \[Zeta]0;
+   \[Zeta][+1, -1, p] = 1.1 \[Zeta]0;
+   
+   \[Zeta][+1, +1, q] = \[Zeta]0 ;
+   \[Zeta][+1, +1, p] = \[Zeta]0;
+   \[Omega] = 4.45 10^-5;
+   \[Omega]b = 8.22 10^-4;
+   \[Omega]bv = 3.3 \[Omega]b;
+   \[Omega]v = 2 10^-3;
+   
+   \[Alpha] = 6.9 10^-5;
+   MyEqS[i_, j_][
+     cf_] := -(\[Beta][i, j, p] [cf] Iall[p][t] + \[Beta][i, j, q] [
+           cf] Iall[q][t]) S[i, j][t] +
+     \[Rho][i, j] R[i, j][t] - \[Omega] S[i, j][t];
+   MyEqE[i_, j_, k_][
+     cf_] := \[Beta][i, j, k][cf] S[i, j][t] Iall[k][t] - \[Zeta][i, 
+       j, k] EE[i, j, k][t] - \[Omega] EE[i, j, k][t];
+   MyEqI[i_, j_, k_, l_, 
+     noq_] := \[Zeta][i, j, k] c[l] EE[i, j, k][t] - \[Gamma][i, j, k,
+        l] II[i, j, k, l][t] + 
+     If[SameQ[k, p], -1, +1] If[noq, 
+       0, \[Phi][i, j, l] ] II[i, j, p, l][t] + 
+     Which[l == +1, 0, l == 0, -1, 
+       l == -1, +1] (\[Theta][00, -1] II[i, j, k, 00][
+          t] - \[Theta][-1, 00] II[i, j, k, -1][t]) + -\[Omega] II[i, 
+        j, k, l][t];
+   MyEqR[i_, j_] := \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \(1\)]\((\[Gamma][i, 
+          j, p, l] \(II[i, j, p, l]\)[t] + \[Gamma][i, j, q, 
+          l] \(II[i, j, q, l]\)[t])\)\) - \[Rho][i, j] R[i, j][
+       t] - \[Omega] R[i, j][t];
+   EQN[cf_, noq_] := {
+     
+     S[-1, -1]'[t] == MyEqS[-1, -1][cf] +
+       \[Alpha] (S[-1, -1][t] + S[+1, +1][t] + Sp[+1, +1][t] +
+          EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, +1, p][t] + 
+          EE[+1, +1, q][t] + Ep[+1, +1][t] +
+          II[-1, -1, p, +1][t] + II[+1, +1, p, +1][t] +
+          R[-1, -1][t] + R[+1, +1][t] + Rp[+1, +1][t]),
+     
+     S[+1, -1]'[t] == MyEqS[+1, -1][cf] +
+       \[Alpha] (S[+1, -1][t] + EE[+1, -1, p][t] + EE[+1, -1, q][t] + 
+          R[+1, -1][t]) -
+       \[Omega]v S[+1, -1][t],
+     
+     S[+1, +1]'[t] == MyEqS[+1, +1][cf],
+     
+     Sp[+1, -1]'[
+       t] == -\[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] + \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega] Sp[+1, -1][
+         t] - \[Omega]v Sp[+1, -1][t],
+     
+     Sp[+1, +1]'[
+       t] == -\[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] + \[Rho][+1, +1] Rp[+1, -1][t] - \[Omega] Sp[+1, +1][t]
+       + \[Alpha] (Sp[+1, -1][t] + Ep[+1, -1][t] + Rp[+1, -1][t]),
+     
+     EE[-1, -1, p]'[t] == MyEqE[-1, -1, p][cf],
+     EE[-1, -1, q]'[t] == If[noq, 0, MyEqE[-1, -1, q][cf]],
+     
+     EE[+1, -1, p]'[t] == 
+      MyEqE[+1, -1, p][cf] - \[Omega]v EE[+1, -1, p][t],
+     EE[+1, -1, q]'[t] == 
+      If[noq, 0, MyEqE[+1, -1, q][cf] - \[Omega]v EE[+1, -1, q][t]],
+     
+     EE[+1, +1, p]'[t] == MyEqE[+1, +1, p][cf],
+     EE[+1, +1, q]'[t] == MyEqE[+1, +1, q][cf],
+     
+     Ep[+1, -1]'[
+       t] == \[Beta][+1, -1, q][cf] Sp[+1, -1][t] Iall[q][
+         t] - \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][
+         t] - \[Omega]v Ep[+1, -1][t],
+     Ep[+1, +1]'[
+       t] == \[Beta][+1, +1, q][cf] Sp[+1, +1][t] Iall[q][
+         t] - \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t],
+     
+     Eall[t] == 
+      EE[-1, -1, p][t] + EE[-1, -1, q][t] + EE[+1, -1, p][t] + 
+       EE[+1, -1, q][t] + EE[+1, +1, p][t] + EE[+1, +1, q][t] + 
+       Ep[+1, -1][t] + Ep[+1, +1][t],
+     
+     dEp[t] == \[Beta][-1, -1, p][cf] S[-1, -1][t] Iall[p][
+         t] + \[Beta][+1, -1, p][cf] S[+1, -1][t] Iall[p][
+         t] + \[Beta][+1, +1, p][cf] S[+1, +1][t] Iall[p][t],
+     
+     II[-1, -1, p, +1]'[t] == MyEqI[-1, -1, p, +1, noq],
+     II[-1, -1, p, 00]'[t] == 
+      MyEqI[-1, -1, p, 00, 
+        noq] + \[Alpha] (II[-1, -1, p, 00][t] + II[+1, +1, p, 00][t]) -
+       \[Omega]b II[-1, -1, p, 00][t],
+     II[-1, -1, p, -1]'[t] == 
+      MyEqI[-1, -1, p, -1, 
+        noq] + \[Alpha] (II[-1, -1, p, -1][t] + II[+1, +1, p, -1][t]) -
+       \[Omega]b II[-1, -1, p, -1][t],
+     II[-1, -1, q, +1]'[t] == 
+      MyEqI[-1, -1, q, +1, 
+        noq] + \[Alpha] (II[-1, -1, q, +1][t] + II[+1, +1, q, +1][t])
+       - \[Omega]b II[-1, -1, q, +1][t],
+     II[-1, -1, q, 00]'[t] == 
+      MyEqI[-1, -1, q, 00, 
+        noq] + \[Alpha] (II[-1, -1, q, 00][t] + II[+1, +1, q, 00][t]) -
+       \[Omega]b II[-1, -1, q, 00][t],
+     II[-1, -1, q, -1]'[t] == MyEqI[-1, -1, q, -1, noq] +
+       \[Alpha] (II[-1, -1, q, -1][t] + II[+1, +1, q, -1][t] + 
+          Ip[+1, +1, q, +1][t]) -
+       \[Omega]b II[-1, -1, q, -1][t],
+     
+     II[+1, -1, p, +1]'[t] == 
+      MyEqI[+1, -1, p, +1, noq] - \[Omega]v II[+1, -1, p, +1][t],
+     II[+1, -1, p, 00]'[t] == 
+      MyEqI[+1, -1, p, 00, 
+        noq] + \[Alpha] II[+1, -1, p, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, 00][t],
+     II[+1, -1, p, -1]'[t] == 
+      MyEqI[+1, -1, p, -1, 
+        noq] + \[Alpha] II[+1, -1, p, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, p, -1][t],
+     II[+1, -1, q, +1]'[t] == 
+      MyEqI[+1, -1, q, +1, 
+        noq] + \[Alpha] II[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, +1][t],
+     II[+1, -1, q, 00]'[t] == 
+      MyEqI[+1, -1, q, 00, 
+        noq] + \[Alpha] II[+1, -1, q, 00][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, 00][t],
+     II[+1, -1, q, -1]'[t] == 
+      MyEqI[+1, -1, q, -1, 
+        noq] + \[Alpha] II[+1, -1, q, -1][
+         t] - (\[Omega]bv + \[Omega]v) II[+1, -1, q, -1][t],
+     
+     II[+1, +1, p, +1]'[t] == MyEqI[+1, +1, p, +1, noq],
+     II[+1, +1, p, 00]'[t] == 
+      MyEqI[+1, +1, p, 00, noq] - \[Omega]b II[+1, +1, p, 00][t],
+     II[+1, +1, p, -1]'[t] == 
+      MyEqI[+1, +1, p, -1, noq] - \[Omega]b II[+1, +1, p, -1][t],
+     II[+1, +1, q, +1]'[t] == 
+      MyEqI[+1, +1, q, +1, noq] - \[Omega]b II[+1, +1, q, +1][t],
+     II[+1, +1, q, 00]'[t] == 
+      MyEqI[+1, +1, q, 00, noq] - \[Omega]b II[+1, +1, q, 00][t],
+     II[+1, +1, q, -1]'[t] == 
+      MyEqI[+1, +1, q, -1, noq] - \[Omega]b II[+1, +1, q, -1][t],
+     
+     Ip[+1, -1, q, +1]'[
+       t] == \[Zeta][+1, -1, q] c[+1] Ep[+1, -1][t] - \[Gamma][+1, -1,
+          q, +1] Ip[+1, -1, q, +1][t]
+       + \[Alpha] Ip[+1, -1, q, +1][
+         t] - (\[Omega]bv + \[Omega]b) Ip[+1, -1, q, +1][t],
+     
+     Ip[+1, +1, q, +1]'[
+       t] == \[Zeta][+1, +1, q] c[+1] Ep[+1, +1][t] - \[Gamma][+1, +1,
+          q, +1] Ip[+1, +1, q, +1][t] -
+       \[Omega]b Ip[+1, +1, q, +1][t],
+     
+     Iall[p][t] ==
+      II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+       II[-1, -1, p, -1][t] +
+       II[+1, -1, p, +1][t] + II[+1, -1, p, 00][t] + 
+       II[+1, -1, p, -1][t] +
+       II[+1, +1, p, +1][t] + II[+1, +1, p, 00][t] + 
+       II[+1, +1, p, -1][t],
+     
+     Iall[q][t] ==
+      II[-1, -1, q, +1][t] + II[-1, -1, q, 00][t] + 
+       II[-1, -1, q, -1][t] +
+       II[+1, -1, q, +1][t] + II[+1, -1, q, 00][t] + 
+       II[+1, -1, q, -1][t] +
+       II[+1, +1, q, +1][t] + II[+1, +1, q, 00][t] + 
+       II[+1, +1, q, -1][t] + Ip[+1, +1, q, +1][t] + 
+       Ip[+1, -1, q, +1][t],
+     
+     R[-1, -1]'[t] == MyEqR[-1, -1],
+     
+     R[+1, -1]'[t] == MyEqR[+1, -1] - \[Omega]v R[+1, -1][t],
+     
+     R[+1, +1]'[t] == MyEqR[+1, +1],
+     
+     Rp[+1, -1]'[
+       t] == \[Gamma][+1, -1, q, +1] Ip[+1, -1, q, +1][
+         t] - \[Rho][+1, -1] Rp[+1, -1][t] - \[Omega]v Rp[+1, -1][t],
+     Rp[+1, +1]'[
+       t] == \[Gamma][+1, +1, q, +1] Ip[+1, +1, q, +1][
+         t] - \[Rho][+1, +1] Rp[+1, +1][t],
+     
+     trans1'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (II[-1, -1, p, +1][t] + II[-1, -1, p, 00][t] + 
+         II[-1, -1, p, -1][t]), (* IC to IC *)
+     
+     trans2'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (II[-1, -1, 
+           p, +1][t] + II[-1, -1, p, 00][t] + II[-1, -1, p, -1][t]), (* 
+     IC to HIV *)
+     
+     trans3'[
+       t] == \[Beta][-1, -1, p][cf] S[-1, -1][
+        t] (Iall[p][t] - II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] -
+          II[-1, -1, p, -1][t]), (* HIV to IC *)
+     
+     trans4'[
+       t] == (\[Beta][+1, -1, p][cf] S[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] S[+1, +1][
+           t] + \[Beta][+1, -1, p][cf] Sp[+1, -1][
+           t] + \[Beta][+1, +1, p][cf] Sp[+1, +1][t]) (Iall[p][t] - 
+         II[-1, -1, p, +1][t] - II[-1, -1, p, 00][t] - 
+         II[-1, -1, p, -1][t]), (* HIV to HIV *)
+     
+     qem'[t] == \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(-1\), \(-1\), l]\ \(II[\(-1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(-1\), l]\ \(II[\(+1\), \(-1\), p, l]\)[
+          t]\)\) + \!\(
+\*UnderoverscriptBox[\(\[Sum]\), \(l = \(-1\)\), \
+\(1\)]\(\[Phi][\(+1\), \(+1\), l]\ \(II[\(+1\), \(+1\), p, l]\)[t]\)\)
+     
+     };
+   
+   n = 1419623;
+   ha = prev;
+   ic = 1 - ha;
+   hh = 0.93;
+   aa = 1 - hh;
+   htb = 0.0257;
+   atb = htb;
+   dtb = 0.077;
+   stb = 1 - dtb;
+   htbn = 1 - htb;
+   atbn = 1 - atb;
+   itb = 0.0029; 
+   itbn = 1 - itb;
+   
+   IC[pp_, noq_, noaids_] :=
+    If[noaids,
+     Block[{withaids = IC[pp, noq, False]},
+      Table[
+       withaids[[i, 1]] == Which[
+         i == 1, Plus @@ (withaids[[1 ;; 5, 2]]),
+         i == 6, Plus @@ (withaids[[6 ;; 10, 2]]),
+         i == 11, Plus @@ (withaids[[11 ;; 18, 2]]),
+         i == 19, Plus @@ (withaids[[{19, 25, 31}, 2]]),
+         i == 20, Plus @@ (withaids[[{20, 26, 32}, 2]]),
+         i == 21, Plus @@ (withaids[[{21, 27, 33}, 2]]),
+         i == 22, Plus @@ (withaids[[{22, 28, 34}, 2]]),
+         i == 23, Plus @@ (withaids[[{23, 29, 35, 37}, 2]]),
+         i == 24, Plus @@ (withaids[[{24, 30, 36, 38}, 2]]),
+         True, 0
+         ],
+       {i, 1, Length[withaids]}]
+      ]
+     ,
+     {S[-1, -1][0] == n ic itbn 0.5 + If[noaids,
+         (1 - pp) (n ha aa atbn 0.5) +
+          (1 - pp) (n ha hh htbn 0.5) +
+          pp (n ha aa atbn 0.5) +
+          pp (n ha hh htbn 0.5),
+         0],
+      S[+1, -1][0] == (1 - pp) (n If[noaids, 0, ha] aa atbn 0.5),
+      S[+1, +1][0] == (1 - pp) (n If[noaids, 0, ha] hh htbn 0.5),
+      Sp[+1, -1][0] == pp (n If[noaids, 0, ha] aa atbn 0.5),
+      Sp[+1, +1][0] == pp (n If[noaids, 0, ha] hh htbn 0.5),
+      
+      R[-1, -1][0] == 
+       n If[noaids, 1, ic] itbn - S[-1, -1][0] + If[noaids,
+         n ha aa atbn - S[+1, -1][0] - Sp[+1, -1][0] +
+          n ha hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+         0],
+      R[+1, -1][0] == 
+       n If[noaids, 0, ha] aa atbn - S[+1, -1][0] - Sp[+1, -1][0],
+      R[+1, +1][0] == 
+       n If[noaids, 0, ha] hh htbn - S[+1, +1][0] - Sp[+1, +1][0],
+      Rp[+1, -1][0] == 0,
+      Rp[+1, +1][0] == 0,
+      
+      EE[-1, -1, p][0] == 0,
+      EE[-1, -1, q][0] == 0,
+      
+      EE[+1, -1, p][0] == 0,
+      EE[+1, -1, q][0] == 0,
+      
+      EE[+1, +1, p][0] == 0,
+      EE[+1, +1, q][0] == 0,
+      
+      Ep[+1, -1][0] == 0,
+      Ep[+1, +1][0] == 0,
+      
+      II[-1, -1, p, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[+1] + 
+          n ha hh htb If[noq, 1, stb] c[+1], 0],
+      II[-1, -1, p, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[00] + 
+          n ha hh htb If[noq, 1, stb] c[00], 0],
+      II[-1, -1, p, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 1, stb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 1, stb] c[-1] + 
+          n ha hh htb If[noq, 1, stb] c[-1], 0],
+      II[-1, -1, q, +1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[+1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[+1] + 
+          n ha hh htb If[noq, 0, dtb] c[+1], 0],
+      II[-1, -1, q, 00][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[00] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[00] + 
+          n ha hh htb If[noq, 0, dtb] c[00], 0],
+      II[-1, -1, q, -1][0] == 
+       n If[noaids, 1, ic] itb If[noq, 0, dtb] c[-1] +
+        If[noaids, 
+         n ha aa atb If[noq, 0, dtb] c[-1] + 
+          n ha hh htb If[noq, 0, dtb] c[-1], 0],
+      
+      II[+1, -1, p, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[+1],
+      II[+1, -1, p, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[00],
+      II[+1, -1, p, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 1, stb] c[-1],
+      II[+1, -1, q, +1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[+1],
+      II[+1, -1, q, 00][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[00],
+      II[+1, -1, q, -1][0] == 
+       n If[noaids, 0, ha] aa atb If[noq, 0, dtb] c[-1],
+      
+      II[+1, +1, p, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[+1],
+      II[+1, +1, p, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[00],
+      II[+1, +1, p, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 1, stb] c[-1],
+      II[+1, +1, q, +1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[+1],
+      II[+1, +1, q, 00][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[00],
+      II[+1, +1, q, -1][0] == 
+       n If[noaids, 0, ha] hh htb If[noq, 0, dtb] c[-1],
+      
+      Ip[+1, -1, q, +1][0] == 0,
+      Ip[+1, +1, q, +1][0] == 0,
+      
+      trans1[0] == 0,
+      trans2[0] == 0,
+      trans3[0] == 0,
+      trans4[0] == 0,
+      qem[0] == 0
+      
+      }
+     ];
+   
+   Return[
+    
+    {{
+      NDSolveValue[
+       Evaluate[Join[EQN[0.5, False], IC[0.5, False, False]]], 
+       Iall[q][365] - II[-1, -1, q, -1][365] - 
+        II[-1, -1, q, 00][365] - II[-1, -1, q, +1][365], {t, 0, 365}],
+      NDSolveValue[
+       Evaluate[Join[EQN[0.5, False], IC[0.5, False, False]]],
+       Iall[p][365] + Iall[q][365] - II[-1, -1, q, -1][365] - 
+        II[-1, -1, q, 00][365] - II[-1, -1, q, +1][365] - 
+        II[-1, -1, p, -1][365] - II[-1, -1, p, 00][365] - 
+        II[-1, -1, p, +1][365], {t, 0, 365}]
+      }, {
+      NDSolveValue[
+       Evaluate[Join[EQN[1.2, False], IC[0.5, False, False]]], 
+       Iall[q][365] - II[-1, -1, q, -1][365] - 
+        II[-1, -1, q, 00][365] - II[-1, -1, q, +1][365], {t, 0, 365}],
+      NDSolveValue[
+       Evaluate[Join[EQN[1.2, False], IC[0.5, False, False]]],
+       Iall[p][365] + Iall[q][365] - II[-1, -1, q, -1][365] - 
+        II[-1, -1, q, 00][365] - II[-1, -1, q, +1][365] - 
+        II[-1, -1, p, -1][365] - II[-1, -1, p, 00][365] - 
+        II[-1, -1, p, +1][365], {t, 0, 365}]
+      }}
+    ]
+   ];
+
+DATA = Table[SSHH[prev], {prev, 0.05, 0.3, 0.05}]
+DATA2 = Table[SSHH2[prev], {prev, 0.05, 0.3, 0.05}]
+
+BarChart[Differences /@ DATA, ChartLayout -> "Stacked",
+ ChartLegends -> 
+  Reverse@{"p strain", "q strain, cf=1.2", "q strain, cf=0.5"},
+ ChartStyle -> Reverse@{Blue, Pink, Red},
+ PlotLabel -> 
+  Style["Relative Emergence at Day 365 vs. AIDS Prevalence", Large],
+ Axes -> False, Frame -> {True, True, False, False},
+ FrameLabel -> 
+  Evaluate[Style[#, Large] & /@ {"AIDS Prevalence", 
+     "Relative Emergence"}],
+ FrameTicks -> {Table[{i, 0.05 i}, {i, 1, 6}], Automatic},
+ ImageSize -> 800
+ ]
+
+BarChart[Differences /@ DATA2, ChartLayout -> "Stacked",
+ ChartLegends -> 
+  Reverse@{"p strain", "q strain, cf=1.2", "q strain, cf=0.5"},
+ ChartStyle -> Reverse@{Blue, Pink, Red},
+ PlotLabel -> 
+  Style["Relative Emergence at Day 365 vs. AIDS Prevalence\nAmong \
+HIV+ Infectives", Large],
+ Axes -> False, Frame -> {True, True, False, False},
+ FrameLabel -> 
+  Evaluate[Style[#, Large] & /@ {"AIDS Prevalence", 
+     "Relative Emergence"}],
+ FrameTicks -> {Table[{i, 0.05 i}, {i, 1, 6}], Automatic},
+ ImageSize -> 800, PlotRange -> {0.8, 1}
+ ]
+
+DATA3 = Table[SSHHAbs[prev], {prev, 0.05, 0.3, 0.05}]
+DATA4 = Table[SSHHAbs2[prev], {prev, 0.05, 0.3, 0.05}]
+
+DATA3a = DATA3[[All, 1, All]]
+DATA3b = DATA3[[All, 2, All]]
+DATA4a = DATA4[[All, 1, All]]
+DATA4b = DATA4[[All, 2, All]]
+
+GraphicsRow[
+ {BarChart[DATA3a, ChartLayout -> "Stacked",
+   ChartLegends -> Reverse@{"p strain", "q strain"},
+   ChartStyle -> Reverse@{Blue, Red},
+   PlotLabel -> 
+    Style["Total Emergence at Day 365 vs. AIDS Prevalence\ncf=0.5", 
+     Large],
+   Axes -> False, Frame -> {True, True, False, False},
+   FrameLabel -> 
+    Evaluate[
+     Style[#, Large] & /@ {"AIDS Prevalence", "Total Emergence"}],
+   FrameTicks -> {Table[{i, 0.05 i}, {i, 1, 6}], Automatic},
+   ImageSize -> 600, ImagePadding -> 100, PlotRange -> {0, 20000}
+   ],
+  BarChart[DATA3b, ChartLayout -> "Stacked",
+   ChartLegends -> Reverse@{"p strain", "q strain"},
+   ChartStyle -> Reverse@{Blue, Pink},
+   PlotLabel -> 
+    Style["Total Emergence at Day 365 vs. AIDS Prevalence\ncf=1.2", 
+     Large],
+   Axes -> False, Frame -> {True, True, False, False},
+   FrameLabel -> 
+    Evaluate[
+     Style[#, Large] & /@ {"AIDS Prevalence", "Total Emergence"}],
+   FrameTicks -> {Table[{i, 0.05 i}, {i, 1, 6}], Automatic},
+   ImageSize -> 625, ImagePadding -> 100, PlotRange -> {0, 20000}
+   ]},
+ ImageSize -> 1400
+ ]
+
+
+GraphicsRow[
+ {BarChart[DATA4a, ChartLayout -> "Stacked",
+   ChartLegends -> Reverse@{"p strain", "q strain"},
+   ChartStyle -> Reverse@{Blue, Red},
+   PlotLabel -> 
+    Style["Total Emergence at Day 365 vs. AIDS Prevalence\ncf=0.5, \
+Among HIV+ Infectives", Large],
+   Axes -> False, Frame -> {True, True, False, False},
+   FrameLabel -> 
+    Evaluate[
+     Style[#, Large] & /@ {"AIDS Prevalence", "Total Emergence"}],
+   FrameTicks -> {Table[{i, 0.05 i}, {i, 1, 6}], Automatic},
+   ImageSize -> 600, ImagePadding -> 100, PlotRange -> {0, 10000}
+   ],
+  BarChart[DATA4b, ChartLayout -> "Stacked",
+   ChartLegends -> Reverse@{"p strain", "q strain"},
+   ChartStyle -> Reverse@{Blue, Pink},
+   PlotLabel -> 
+    Style["Total Emergence at Day 365 vs. AIDS Prevalence\ncf=1.2, \
+Among HIV+ Infectives", Large],
+   Axes -> False, Frame -> {True, True, False, False},
+   FrameLabel -> 
+    Evaluate[
+     Style[#, Large] & /@ {"AIDS Prevalence", "Total Emergence"}],
+   FrameTicks -> {Table[{i, 0.05 i}, {i, 1, 6}], Automatic},
+   ImageSize -> 625, ImagePadding -> 100, PlotRange -> {0, 10000}
+   ]},
+ ImageSize -> 1400
+ ]
